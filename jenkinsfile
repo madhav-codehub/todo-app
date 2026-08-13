@@ -1,11 +1,22 @@
 pipeline {
     agent any
 
+    tools{
+        maven 'maven3'
+    }
+
     stages {
-        stage('Hello') {
+        stage('Checkout') {
             steps {
-                echo 'Hello World'
+                echo 'Cloning Repository'
+                git branch: 'main', url: 'https://github.com/madhav-codehub/todo-app'
             }
         }
+        stage('Build Artifact')
+            steps {
+                echo 'Building Artifact'
+                sh 'mvn clean package'
+            }
+
     }
 }
