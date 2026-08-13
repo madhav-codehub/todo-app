@@ -36,5 +36,17 @@ pipeline {
                 echo 'Pushed to DockerHub'
             }
         }
+        stage('Remove Old Docker Images') {
+            steps {
+                echo 'Removing old Docker images'
+
+                 sh '''
+                    docker images madhav201994/todo-app \
+                    --format "{{.Repository}}:{{.Tag}}" |
+                    grep -v ":${BUILD_NUMBER}$" |
+                    xargs -r docker rmi -f
+                   '''
+            }
+        }
     }
 }
