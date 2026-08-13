@@ -25,5 +25,16 @@ pipeline {
                 sh 'docker build -t madhav201994/todo-app:${BUILD_NUMBER} .'
             }
         }
+
+        stage('Push to DockerHub'){
+            steps{
+                echo 'Pushing Docker Image to DockerHub'
+                withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password')]) {
+                    sh 'docker login -u madhav201994 -p ${docker_password}'
+                }
+                sh 'docker push madhav201994/todo-app:${BUILD_NUMBER}'
+                echo 'Pushed to DockerHub'
+            }
+        }
     }
 }
