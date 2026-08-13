@@ -48,5 +48,16 @@ pipeline {
                    '''
             }
         }
+        stage('Run Docker Container'){
+            steps{
+                echo 'Running latest docker image'
+                sh '''
+                    docker stop todo-app || true
+                    docker rm todo-app || true
+
+                    docker run -d --name todo-app -p 9100:9100 madhav201994/todo-app:${BUILD_NUMBER}
+                '''
+            }
+        }
     }
 }
