@@ -5,6 +5,14 @@ pipeline {
         maven 'maven3'
     }
 
+    environment{
+        AWS_REGION='ap-south-1'
+        AWS_ACCOUNT_ID='805102729548'
+        ECR_REPOSITORY='todo-app'
+        ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_NAME="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -22,11 +30,27 @@ pipeline {
         stage('Build Docker Image'){
             steps{
                 echo 'Building Docker Image'
-                sh 'docker build -t madhav201994/todo-app:${BUILD_NUMBER} .'
+                sh '''
+                       docker build \
+                       -t ${IMAGE_NAME}:${BUILD_NUMBER} .
+                '''
             }
         }
 
-        stage('Push to DockerHub'){
+        stage('Login to ECR'){
+            steps{
+                echo 'Logging into Amazon ECR'
+                sh '''
+                    aws ecr get-login-password --region ${AWS_REGION} |
+                    docker login \
+                    --username AWS
+                    --password-stdin ${ECR_REGISTRY}
+                '''
+            }
+        }
+
+
+       /*  stage('Push to DockerHub'){
             steps{
                 echo 'Pushing Docker Image to DockerHub'
                 withCredentials([string(credentialsId: 'docker_password', variable: 'docker_password')]) {
@@ -35,8 +59,19 @@ pipeline {
                 sh 'docker push madhav201994/todo-app:${BUILD_NUMBER}'
                 echo 'Pushed to DockerHub'
             }
+        } */
+
+        stage('Push Image to ECR'){
+            steps{
+                echo 'Pushing Docker image to ECR'
+                sh '''
+                    docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                '''
+                echo 'Image Pushed ${IMAGE_NAME}:${BUILD_NUMBER}'
+            }
         }
-        stage('Remove Old Docker Images') {
+
+        /* stage('Remove Old Docker Images') {
             steps {
                 echo 'Removing old Docker images'
 
@@ -47,8 +82,22 @@ pipeline {
                     xargs -r docker rmi -f
                    '''
             }
+        } */
+
+        stage('Remove Old Docker Images') {
+            steps {
+                echo 'Removing old Docker images'
+
+                sh '''
+                    docker images ${IMAGE_NAME} \
+                    --format "{{.Repository}}:{{.Tag}}" |
+                    grep -v ":${BUILD_NUMBER}$" |
+                    xargs -r docker rmi -f || true
+                '''
+            }
         }
-        stage('Run Docker Container'){
+
+        /* stage('Run Docker Container'){
             steps{
                 echo 'Running latest docker image'
                 sh '''
@@ -56,6 +105,18 @@ pipeline {
                     docker rm todo-app || true
 
                     docker run -d --name todo-app -p 9100:9100 madhav201994/todo-app:${BUILD_NUMBER}
+                '''
+            }
+        } */
+
+        stage('Run Docker Container'){
+            steps{
+                echo 'Running latest docker image'
+                sh '''
+                    docker stop todo-app || true
+                    docker rm todo-app || true
+
+                    docker run -d --name todo-app -p 9100:9100 ${IMAGE_NAME}:${BUILD_NUMBER}
                 '''
             }
         }
