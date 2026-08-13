@@ -12,11 +12,11 @@ pipeline {
                 git branch: 'main', url: 'https://github.com/madhav-codehub/todo-app'
             }
         }
-        stage('Build Artifact')
+        stage('Build Artifact') {
             steps {
                 echo 'Building Artifact'
                 sh 'mvn clean package'
             }
-
+        }
     }
 }
